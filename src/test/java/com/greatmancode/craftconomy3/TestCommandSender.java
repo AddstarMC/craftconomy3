@@ -28,6 +28,16 @@ public class TestCommandSender implements CommandSender {
     }
 
     @Override
+    public void sendMessage(UUID sender, String message) {
+
+    }
+
+    @Override
+    public void sendMessage(UUID sender, String... messages) {
+
+    }
+
+    @Override
     public void sendMessage(String[] strings) {
 
     }
