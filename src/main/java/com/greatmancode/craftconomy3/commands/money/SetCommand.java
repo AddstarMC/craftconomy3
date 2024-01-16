@@ -25,6 +25,7 @@ import com.greatmancode.craftconomy3.account.Account;
 import com.greatmancode.craftconomy3.commands.AbstractCommand;
 import com.greatmancode.craftconomy3.currency.Currency;
 import com.greatmancode.tools.commands.CommandSender;
+import com.greatmancode.tools.commands.ConsoleCommandSender;
 import com.greatmancode.tools.commands.interfaces.CommandExecutor;
 import com.greatmancode.tools.entities.Player;
 import com.greatmancode.tools.utils.Tools;
@@ -45,10 +46,14 @@ public class SetCommand extends AbstractCommand {
                     currency = checkCurrencyExists(sender,args[2]);
                     if(currency == null)return;
                 }
-                String worldName = Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid());
-                if (args.length > 3) {
-                    if(!checkWorldExists(sender,args[3]))return;
-                    worldName = Common.getInstance().getWorldGroupManager().getWorldGroupName(args[3]);
+                // Default to "world"
+                String worldName = "world";
+                if(!(sender instanceof ConsoleCommandSender)) {
+                    worldName = Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid());
+                    if (args.length > 3) {
+                        if (!checkWorldExists(sender, args[3])) return;
+                        worldName = Common.getInstance().getWorldGroupManager().getWorldGroupName(args[3]);
+                    }
                 }
                 Account account = Common.getInstance().getAccountManager().getAccount(args[0], false);
                 account.set(amount, worldName, currency.getName(), Cause.USER, sender.getName());
