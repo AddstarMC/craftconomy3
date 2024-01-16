@@ -43,7 +43,6 @@ public class MySQLEngine extends SQLStorageEngine {
         config.addDataSourceProperty("databaseName", Common.getInstance().getMainConfig().getString("System.Database.Db", "Craftconomy"));
         config.addDataSourceProperty("user", Common.getInstance().getMainConfig().getString("System.Database.Username", "root"));
         config.addDataSourceProperty("password", Common.getInstance().getMainConfig().getString("System.Database.Password", ""));
-        config.addDataSourceProperty("autoDeserialize", true);
         if (DripReporterLoader.isEnabled()) {
             if (DripReporterLoader.getApi() != null) {
                 try {
