@@ -394,6 +394,68 @@ public abstract class SQLStorageEngine extends StorageEngine {
         return result;
     }
 
+    /**
+     * Atomic balance change: the read and the write happen in one statement,
+     * so two concurrent changes cannot overwrite each other. This matters most
+     * where several servers share one database, since there is no JVM-level
+     * ordering between them.
+     */
+    @Override
+    public Double changeBalance(Account account, double amount, Currency currency, String world, Double minimum) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = (commitConnection != null) ? commitConnection : db.getConnection();
+            statement = connection.prepareStatement(balanceTable.addToEntry);
+            statement.setDouble(1, amount);
+            statement.setInt(2, account.getId());
+            statement.setString(3, currency.getName());
+            statement.setString(4, world);
+            statement.setDouble(5, amount);
+            statement.setDouble(6, minimum != null ? minimum : -Double.MAX_VALUE);
+            int updated = statement.executeUpdate();
+            statement.close();
+            statement = null;
+
+            if (updated > 0) {
+                return getBalance(account, currency, world);
+            }
+
+            // Either there is no balance row yet, or the floor was breached.
+            // Distinguish the two so a genuine shortfall is not silently
+            // turned into a new row holding the delta.
+            if (balanceRowExists(connection, account, currency, world)) {
+                return null;
+            }
+            double starting = amount;
+            if (minimum != null && starting < minimum) {
+                return null;
+            }
+            return setBalance(account, starting, currency, world);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new BackendErrorException(e.getMessage());
+        } finally {
+            Tools.closeJDBCStatement(statement);
+            if (commitConnection == null) {
+                Tools.closeJDBCConnection(connection);
+            }
+        }
+    }
+
+    private boolean balanceRowExists(Connection connection, Account account, Currency currency, String world) throws SQLException {
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(balanceTable.selectWorldCurrencyEntryAccount);
+            statement.setString(1, account.getAccountName());
+            statement.setString(2, world);
+            statement.setString(3, currency.getName());
+            return statement.executeQuery().next();
+        } finally {
+            Tools.closeJDBCStatement(statement);
+        }
+    }
+
     @Override
     public void setInfiniteMoney(Account account, boolean infinite) {
         Connection connection = null;

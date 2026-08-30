@@ -6,7 +6,7 @@
 
     <groupId>com.greatmancode</groupId>
     <artifactId>craftconomy3</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <licenses>
         <license>
             <name>LGPL v3</name>
@@ -77,6 +77,10 @@
             </repository>
         <!-- Addstar repos -->
         <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
             <id>addstar-repo</id>
             <url>https://maven.addstar.com.au/artifactory/maven-release-local</url>
             <snapshots>
@@ -108,6 +112,18 @@
                     <groupId>org.spongepowered</groupId>
                     <artifactId>spongeapi</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.bukkit</groupId>
+                    <artifactId>bukkit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7.1</version>
+            <scope>provided</scope>
+            <exclusions>
                 <exclusion>
                     <groupId>org.bukkit</groupId>
                     <artifactId>bukkit</artifactId>

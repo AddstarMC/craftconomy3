@@ -150,6 +150,34 @@ public abstract class StorageEngine {
     public abstract double setBalance(Account account, double amount, Currency currency, String world);
 
     /**
+     * Apply a delta to an account balance, returning the resulting balance.
+     *
+     * Implementations should perform this atomically where the backend allows
+     * it, so that concurrent changes cannot lose an update. When minimum is
+     * non-null the change must only be applied if the resulting balance would
+     * be at least that value; otherwise null is returned and nothing is
+     * written. This is what makes a withdrawal safe against a concurrent
+     * spend on another server sharing the same database.
+     *
+     * The default implementation is a non-atomic read-modify-write, kept for
+     * backends that cannot express a conditional update.
+     *
+     * @param account  The account to modify
+     * @param amount   The delta to apply; negative to take money away
+     * @param currency The Currency
+     * @param world    The world group
+     * @param minimum  Lowest permitted resulting balance, or null for no floor
+     * @return the new balance, or null if the floor would have been breached
+     */
+    public Double changeBalance(Account account, double amount, Currency currency, String world, Double minimum) {
+        double result = getBalance(account, currency, world) + amount;
+        if (minimum != null && result < minimum) {
+            return null;
+        }
+        return setBalance(account, result, currency, world);
+    }
+
+    /**
      * Set if the account have infinite money
      *
      * @param account  The account to modify

@@ -76,6 +76,19 @@ public class BalanceTable extends DatabaseTable {
                            "WHERE " + getPrefix() + AccountTable.TABLE_NAME + ".name=? AND bank=?)," +
                     "?)";
 
+    /**
+     * Applies a delta to an existing balance in a single statement, so that
+     * concurrent deposits/withdrawals cannot lose an update the way a
+     * read-modify-write does. The optional floor is used by withdrawals: when
+     * the row no longer holds enough money the update matches nothing and the
+     * caller sees zero affected rows instead of writing a stale total.
+     */
+    public final String addToEntry =
+            "UPDATE " + getPrefix() + TABLE_NAME + " SET balance = balance + ? " +
+            "WHERE username_id=? " +
+                 " AND " + CURRENCY_FIELD + "=? AND " + WORLD_NAME_FIELD + "=? " +
+                 " AND balance + ? >= ?";
+
     public final String updateEntry =
             "UPDATE " + getPrefix() + TABLE_NAME + " SET balance=? " +
             "WHERE username_id=? " +

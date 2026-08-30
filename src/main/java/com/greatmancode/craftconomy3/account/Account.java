@@ -23,7 +23,6 @@ import com.greatmancode.craftconomy3.Cause;
 import com.greatmancode.craftconomy3.Common;
 import com.greatmancode.craftconomy3.LogInfo;
 import com.greatmancode.craftconomy3.currency.Currency;
-import com.greatmancode.craftconomy3.storage.sql.tables.BalanceTable;
 import com.greatmancode.tools.events.event.EconomyChangeEvent;
 
 import java.util.List;
@@ -161,14 +160,19 @@ public class Account {
      * @return The new balance. If the account has infinite money. Double.MAX_VALUE is returned.
      */
     public double deposit(double amount, String world, String currencyName, Cause cause, String causeReason) {
-        double result = getBalance(world,currencyName) + format(amount);
         if (!Common.getInstance().getWorldGroupManager().worldGroupExist(world)) {
             world = Common.getInstance().getWorldGroupManager().getWorldGroupName(world);
         }
         Currency currency = Common.getInstance().getCurrencyManager().getCurrency(currencyName);
+        double result = 0;
         if (currency != null) {
             if (!hasInfiniteMoney()) {
-                result = Common.getInstance().getStorageHandler().getStorageEngine().setBalance(this, result, currency, world);
+                Double newBalance = Common.getInstance().getStorageHandler().getStorageEngine()
+                        .changeBalance(this, format(amount), currency, world, null);
+                if (newBalance == null) {
+                    return format(getBalance(world, currencyName));
+                }
+                result = newBalance;
                 Common.getInstance().writeLog(LogInfo.DEPOSIT, cause, causeReason, this, amount, currency, world);
                 Common.getInstance().getServerCaller().throwEvent(new EconomyChangeEvent(this.getAccountName(), result));
             } else {
@@ -204,15 +208,22 @@ public class Account {
      * @return The new balance. If the account has infinite money. Double.MAX_VALUE is returned.
      */
     public double withdraw(double amount, String world, String currencyName, Cause cause, String causeReason) {
-        BalanceTable balanceTable;
-        double result = getBalance(world,currencyName) - format(amount);
         if (!Common.getInstance().getWorldGroupManager().worldGroupExist(world)) {
             world = Common.getInstance().getWorldGroupManager().getWorldGroupName(world);
         }
         Currency currency = Common.getInstance().getCurrencyManager().getCurrency(currencyName);
+        double result = 0;
         if (currency != null) {
             if (!hasInfiniteMoney()) {
-                result = Common.getInstance().getStorageHandler().getStorageEngine().setBalance(this, result, currency, world);
+                // The floor is applied inside the same statement as the change,
+                // so a concurrent spend cannot slip between a check and a write.
+                Double newBalance = Common.getInstance().getStorageHandler().getStorageEngine()
+                        .changeBalance(this, -format(amount), currency, world, 0.0);
+                if (newBalance == null) {
+                    // Not enough money any more; nothing was written.
+                    return format(getBalance(world, currencyName));
+                }
+                result = newBalance;
                 Common.getInstance().writeLog(LogInfo.WITHDRAW, cause, causeReason, this, amount, currency, world);
                 Common.getInstance().getServerCaller().throwEvent(new EconomyChangeEvent(this.getAccountName(), result));
             } else {

@@ -37,6 +37,7 @@ import com.greatmancode.craftconomy3.events.EventManager;
 import com.greatmancode.craftconomy3.groups.WorldGroupsManager;
 import com.greatmancode.craftconomy3.storage.StorageHandler;
 import com.greatmancode.craftconomy3.utils.OldFormatConverter;
+import com.greatmancode.tools.caller.bukkit.BukkitServerCaller;
 import com.greatmancode.tools.caller.unittest.UnitTestServerCaller;
 import com.greatmancode.tools.commands.CommandHandler;
 import com.greatmancode.tools.commands.SubCommand;
@@ -44,6 +45,7 @@ import com.greatmancode.tools.configuration.Config;
 import com.greatmancode.tools.configuration.ConfigurationManager;
 import com.greatmancode.tools.interfaces.caller.ServerCaller;
 import com.greatmancode.tools.language.LanguageManager;
+import com.greatmancode.tools.utils.ServicePriority;
 import com.greatmancode.tools.utils.Tools;
 import org.json.simple.parser.ParseException;
 
@@ -74,6 +76,7 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
     private CommandHandler commandManager = null;
     private ServerCaller serverCaller = null;
     private boolean databaseInitialized = false;
+    private boolean vaultReady = false;
     private boolean currencyInitialized = false;
     private static boolean initialized = false;
     private Config mainConfig = null;
@@ -132,11 +135,38 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
                 sendConsoleMessage(Level.INFO, getLanguageManager().getString("default_settings_loaded"));
                 startUp();
                 sendConsoleMessage(Level.INFO, getLanguageManager().getString("ready"));
+                vaultReady = true;
             }
 
 
             getServerCaller().registerPermission("craftconomy.money.log.others");
             initialized = true;
+            if (vaultReady) {
+                registerVaultEconomy();
+            }
+        }
+    }
+
+    /**
+     * Register ourselves as a Vault economy provider.
+     *
+     * Vault used to ship its own Economy_Craftconomy3 hook, but that was
+     * removed from Vault in 2022, so anything newer than 1.7.3 only sees an
+     * economy that registers itself through the services manager.
+     */
+    private void registerVaultEconomy() {
+        if (!(getServerCaller() instanceof BukkitServerCaller)) {
+            return;
+        }
+        if (!getServerCaller().isPluginEnabled("Vault")) {
+            sendConsoleMessage(Level.INFO, "Vault was not found. Skipping economy registration.");
+            return;
+        }
+        try {
+            getServerCaller().setVaultEconomyHook(new CraftconomyVaultEconomy(), ServicePriority.Highest);
+            sendConsoleMessage(Level.INFO, "Registered Craftconomy3 as the Vault economy provider.");
+        } catch (Throwable e) {
+            sendConsoleMessage(Level.SEVERE, "Unable to register with Vault: " + e.getMessage());
         }
     }
 
@@ -160,6 +190,7 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         commandManager = null;
         databaseInitialized = false;
         currencyInitialized = false;
+        vaultReady = false;
         initialized = false;
         mainConfig = null;
         //Default values
