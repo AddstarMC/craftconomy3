@@ -19,10 +19,8 @@
  */
 package com.greatmancode.craftconomy3.storage.sql;
 
-import au.com.addstar.dripreporter.DripReporterApi;
 import com.greatmancode.craftconomy3.Common;
 import com.greatmancode.craftconomy3.storage.sql.tables.*;
-import com.greatmancode.tools.utils.DripReporterLoader;
 import com.greatmancode.tools.utils.Tools;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -43,19 +41,6 @@ public class MySQLEngine extends SQLStorageEngine {
         config.addDataSourceProperty("databaseName", Common.getInstance().getMainConfig().getString("System.Database.Db", "Craftconomy"));
         config.addDataSourceProperty("user", Common.getInstance().getMainConfig().getString("System.Database.Username", "root"));
         config.addDataSourceProperty("password", Common.getInstance().getMainConfig().getString("System.Database.Password", ""));
-        if (DripReporterLoader.isEnabled()) {
-            if (DripReporterLoader.getApi() != null) {
-                try {
-                    DripReporterApi api = DripReporterLoader.getApi();
-                    config.setHealthCheckRegistry(api.getHealthRegistry());
-                    config.setMetricRegistry(api.getRegistry());
-                } catch (Throwable err){
-                    Common.getInstance().getLogger().info("Unable to hook dripReporter.");
-
-                    Common.getInstance().getLogger().info("CraftCononmy-DripHook: " + err.getMessage());
-                }
-            }
-        }
         String useSSL = Common.getInstance().getMainConfig().getString("System.Database.useSSL", "false");
         if (useSSL == null) useSSL = "false";
         config.addDataSourceProperty("useSSL", Boolean.valueOf(useSSL));

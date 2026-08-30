@@ -22,7 +22,7 @@ main: com.greatmancode.craftconomy3.tools.interfaces.BukkitLoader
 version: ${plugin.version}
 api-version: ${spigot.api.version}
 authors: [Greatman, Aztorius, Narimm]
-softdepends: [MVdWPlaceholderAPI, Vault]
+softdepend: [Vault]
 commands:
     money:
       description: Check / Distribute currency.

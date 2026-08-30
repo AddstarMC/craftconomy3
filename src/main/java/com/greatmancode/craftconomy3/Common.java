@@ -37,7 +37,6 @@ import com.greatmancode.craftconomy3.events.EventManager;
 import com.greatmancode.craftconomy3.groups.WorldGroupsManager;
 import com.greatmancode.craftconomy3.storage.StorageHandler;
 import com.greatmancode.craftconomy3.utils.OldFormatConverter;
-import com.greatmancode.tools.caller.bukkit.BukkitServerCaller;
 import com.greatmancode.tools.caller.unittest.UnitTestServerCaller;
 import com.greatmancode.tools.commands.CommandHandler;
 import com.greatmancode.tools.commands.SubCommand;
@@ -45,8 +44,6 @@ import com.greatmancode.tools.configuration.Config;
 import com.greatmancode.tools.configuration.ConfigurationManager;
 import com.greatmancode.tools.interfaces.caller.ServerCaller;
 import com.greatmancode.tools.language.LanguageManager;
-import com.greatmancode.tools.utils.DripReporterLoader;
-import com.greatmancode.tools.utils.FeatherBoard;
 import com.greatmancode.tools.utils.Tools;
 import org.json.simple.parser.ParseException;
 
@@ -106,9 +103,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
             if (!getMainConfig().has("System.Database.Poolsize")) {
                 getMainConfig().setValue("System.Database.Poolsize", 10);
             }
-            if(!getMainConfig().has("System.Database.useMetrics")){
-                getMainConfig().setValue("System.Database.useMetrics", false);
-            }
 
             languageManager = new LanguageManager(serverCaller, serverCaller.getDataFolder(), "lang.yml");
             loadLanguage();
@@ -129,11 +123,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
                     sendConsoleMessage(Level.WARNING, getLanguageManager().getString("loaded_setup_mode"));
                 }
             } else {
-                if(getMainConfig().getBoolean("System.Database.useMetrics",false)){
-                    if(DripReporterLoader.hookDripReporterApi(serverCaller.getLoader())){
-                        sendConsoleMessage(Level.INFO,getLanguageManager().getString("metric_enabled"));
-                    };
-                }
                 commandManager.setCurrentLevel(1);
                 initialiseDatabase();
                 updateDatabase();
@@ -147,7 +136,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
 
 
             getServerCaller().registerPermission("craftconomy.money.log.others");
-            addFeatherboardSupport();
             initialized = true;
         }
     }
@@ -683,7 +671,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
      * Initialize the configuration file
      */
     private void loadLanguage() {
-        languageManager.addLanguageEntry("metric_enabled", "DripReporter Metrics enabled");
         languageManager.addLanguageEntry("metric_start_error", "Unable to load Metrics! The error is: %s");
         languageManager.addLanguageEntry("checking_new_version", "Checking if there's a new version.");
         languageManager.addLanguageEntry("running_old_version", "Running a old version of Craftconomy! New version is: %s");
@@ -962,21 +949,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
      */
     private void alertOldDbVersion(int currentVersion, int newVersion) {
         Common.getInstance().sendConsoleMessage(Level.INFO, "Your database is out of date! (Version " + currentVersion + "). Updating it to Revision " + newVersion + ".");
-    }
-
-    private void addFeatherboardSupport() {
-        if (getServerCaller() instanceof BukkitServerCaller && getServerCaller().isPluginEnabled("MVdWPlaceholderAPI")) {
-            FeatherBoard.registerPlaceHolder(getServerCaller().getLoader(), "cc3money", new FeatherBoard.FeatherBoardReplaceEvent() {
-
-                @Override
-                public String getResult(String username, boolean isOnline) {
-                    if (getAccountManager().exist(username, false)) {
-                        return format(null, getCurrencyManager().getDefaultCurrency(), getAccountManager().getAccount(username, false).getBalance("default", getCurrencyManager().getDefaultCurrency().getName()), getDisplayFormat());
-                    }
-                    return "";
-                }
-            });
-        }
     }
 
 }
