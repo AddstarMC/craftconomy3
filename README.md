@@ -1,27 +1,33 @@
 # Craftconomy3
-A Economy plugin for Bukkit &amp; Canary Recode!
+An economy plugin for Bukkit / Spigot / Paper.
 
 This is a fork from https://github.com/greatman/craftconomy3
-Fell free to contribute with pull requests to improve Craftconomy.
+Feel free to contribute with pull requests to improve Craftconomy.
 
 PLEASE NOTE THIS BUILD USES A CUSTOMISED VERSION OF Greatmans Tools found [here](https://github.com/AddstarMC/GreatmancodeTools)
 
 
-## Current Development Version : 3.4.0-SNAPSHOT
+## Current Development Version : 3.5.0-SNAPSHOT
 
-- Bukkit/Spigot 1.8, 1.9, 1.10, 1.11, 1.12 , 1,13 supported
+- Requires Java 21
+- Built against the Spigot API 1.21.4; targets `api-version: 1.21`
+- MySQL is the only supported storage engine
 
-## Build [![Build Status](https://travis-ci.org/Aztorius/craftconomy3.svg?branch=master)](https://travis-ci.org/Aztorius/craftconomy3)
+Craftconomy registers itself as a Vault economy provider, so it works with
+current Vault releases as well as older ones that carried their own bundled
+Craftconomy hook.
 
-Craftconomy3 use Java 1.8.
+## Build
 
-JAR files will be in target
+Craftconomy3 uses Java 21.
 
-### Maven Support has been added back to this build
+Use `clean install` as the default target. JAR files will be in `target`.
 
-use `clean install` as the default target.
-you will find the jars in target
+The build depends on `com.greatmancode:tools`, which is published from the
+[GreatmancodeTools](https://github.com/AddstarMC/GreatmancodeTools) repository.
+Build and install that first if you are working on both at once.
 
+Pass `-Dbuildnumber=<n>` to stamp a build number into the plugin version.
 
 ## License
 Craftconomy is under the LGPLv3, see LICENSE file.

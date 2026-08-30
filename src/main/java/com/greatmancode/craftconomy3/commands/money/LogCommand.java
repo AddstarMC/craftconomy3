@@ -68,7 +68,8 @@ class LogCommandThread implements Runnable {
             }
             ret += "\n";
         }
-        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new LogCommandThreadEnd(sender, ret), 0, true);
+        // Messaging goes back to the main thread.
+        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new LogCommandThreadEnd(sender, ret), 0, false);
     }
 }
 
@@ -101,8 +102,10 @@ public class LogCommand extends AbstractCommand {
             sendMessage(sender, Common.getInstance().getLanguageManager().getString("account_null"));
             return;
         }
+        // The log query is unindexed and can scan a large table, so keep it off
+        // the main thread.
         Common.getInstance().getServerCaller().getSchedulerCaller().delay(new LogCommandThread(sender, page, user),
-                0, false);
+                0, true);
     }
 
     @Override

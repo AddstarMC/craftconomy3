@@ -22,6 +22,7 @@ package com.greatmancode.craftconomy3.currency;
 import com.greatmancode.craftconomy3.Common;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Currency Handler
@@ -38,7 +39,9 @@ public class CurrencyManager {
 
     public CurrencyManager() {
         // Let's load all currency in the database
-        currencyList = Common.getInstance().getStorageHandler().getStorageEngine().getAllCurrencies();
+        // Read from command handlers and from async tasks, so keep it safe for
+        // concurrent access; the storage layer hands back a plain HashMap.
+        currencyList = new ConcurrentHashMap<>(Common.getInstance().getStorageHandler().getStorageEngine().getAllCurrencies());
         for (Map.Entry<String, Currency> currencyEntry : currencyList.entrySet()) {
             if (currencyEntry.getValue().getStatus()) {
                 defaultCurrency = currencyEntry.getValue();

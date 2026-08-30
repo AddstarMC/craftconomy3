@@ -67,6 +67,7 @@ class TopCommandThread implements Runnable {
             ret += "" + ((page - 1) * NUMBER_ELEMENTS + i + 1) + ": {{DARK_GREEN}}" + entry.username + " {{WHITE}}" + Common.getInstance().format(null, currency, entry.balance) + "\n";
         }
 
+        // Messaging goes back to the main thread.
         Common.getInstance().getServerCaller().getSchedulerCaller().delay(new TopCommandThreadEnd(sender, ret), 0, false);
     }
 }
@@ -109,7 +110,8 @@ public class TopCommand extends AbstractCommand {
             world = args[2];
         }
 
-        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new TopCommandThread(sender, page, world, currency), 0, false);
+        // The top query scans the balance table, so keep it off the main thread.
+        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new TopCommandThread(sender, page, world, currency), 0, true);
     }
 
     @Override

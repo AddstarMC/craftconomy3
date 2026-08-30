@@ -22,6 +22,7 @@ package com.greatmancode.craftconomy3.account;
 import com.greatmancode.craftconomy3.Common;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Used with bank accounts. Takes care of the access control of a bank account.
@@ -34,7 +35,7 @@ public class AccountACL {
 
     public AccountACL(Account account) {
         this.account = account;
-        aclList = Common.getInstance().getStorageHandler().getStorageEngine().retrieveACL(account);
+        aclList = new ConcurrentHashMap<>(Common.getInstance().getStorageHandler().getStorageEngine().retrieveACL(account));
     }
 
     /**

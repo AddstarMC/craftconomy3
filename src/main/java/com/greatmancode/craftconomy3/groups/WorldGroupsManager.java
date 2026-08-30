@@ -23,6 +23,7 @@ import com.greatmancode.craftconomy3.Common;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * World Group Manager
@@ -32,7 +33,8 @@ public class WorldGroupsManager {
     private final Map<String, WorldGroup> list;
 
     public WorldGroupsManager() {
-        list = Common.getInstance().getStorageHandler().getStorageEngine().getWorldGroups();
+        // Read on every balance lookup, including from async tasks.
+        list = new ConcurrentHashMap<>(Common.getInstance().getStorageHandler().getStorageEngine().getWorldGroups());
     }
 
     /**

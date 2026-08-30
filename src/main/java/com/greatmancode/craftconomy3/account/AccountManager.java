@@ -21,9 +21,9 @@ package com.greatmancode.craftconomy3.account;
 
 import com.greatmancode.craftconomy3.Common;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Provides access to a account.
@@ -31,8 +31,10 @@ import java.util.Map;
  * @author greatman
  */
 public class AccountManager {
-    private final Map<String, Account> accountList = new HashMap<>();
-    private final Map<String, Account> bankList = new HashMap<>();
+    // Written from the async pre-login handler while the main thread reads,
+    // so these must be safe for concurrent access.
+    private final Map<String, Account> accountList = new ConcurrentHashMap<>();
+    private final Map<String, Account> bankList = new ConcurrentHashMap<>();
 
     /**
      * Retrieve a account. Accounts prefixed with bank: are bank accounts.
@@ -53,10 +55,14 @@ public class AccountManager {
             account = accountList.get(newName);
         } else {
             account = Common.getInstance().getStorageHandler().getStorageEngine().getAccount(newName, bankAccount);
-            if (bankAccount) {
-                bankList.put(newName, account);
-            } else {
-                accountList.put(newName, account);
+            // Never cache a miss: a transient storage failure would otherwise
+            // leave the account permanently broken until the next restart.
+            if (account != null) {
+                if (bankAccount) {
+                    bankList.put(newName, account);
+                } else {
+                    accountList.put(newName, account);
+                }
             }
         }
         return account;
@@ -135,7 +141,12 @@ public class AccountManager {
      * @param name The name of the player/account.
      */
     public void clearCache(String name) {
+        // Entries are keyed the same way getAccount stores them, so the name
+        // has to be normalised here too or this removes nothing.
         accountList.remove(name);
+        if (name != null) {
+            accountList.remove(name.toLowerCase());
+        }
     }
 
     /**
