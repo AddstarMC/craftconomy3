@@ -209,6 +209,9 @@ public abstract class SQLStorageEngine extends StorageEngine {
             statement.setTimestamp(9, timestamp);
             statement.executeUpdate();
         } catch (SQLException e) {
+            // A silently dropped audit row is worse than a noisy failure.
+            Common.getInstance().getLogger().severe("Failed to write transaction log entry for "
+                    + account.getAccountName() + ": " + e.getMessage());
             e.printStackTrace();
         } finally {
             Tools.closeJDBCStatement(statement);
@@ -338,7 +341,10 @@ public abstract class SQLStorageEngine extends StorageEngine {
                 balance = 0;
             }
         } catch (SQLException e) {
+            // Returning 0 here would report the account as broke, and callers
+            // that write a computed total back would then persist that.
             e.printStackTrace();
+            throw new BackendErrorException(e.getMessage());
         } finally {
             Tools.closeJDBCStatement(statement);
             if (commitConnection == null) {
@@ -440,6 +446,90 @@ public abstract class SQLStorageEngine extends StorageEngine {
             if (commitConnection == null) {
                 Tools.closeJDBCConnection(connection);
             }
+        }
+    }
+
+    /**
+     * Transfer money in a single database transaction, so that a failure part
+     * way through cannot leave money debited but never credited. Both legs use
+     * a delta update on one dedicated connection with autocommit off; anything
+     * that goes wrong rolls the whole thing back.
+     */
+    @Override
+    public boolean transfer(Account from, Account to, double fromAmount, Currency fromCurrency,
+                            double toAmount, Currency toCurrency, String world) {
+        // An ongoing bulk operation already owns commitConnection, so fall back
+        // to the default behaviour rather than fighting over it.
+        if (commitConnection != null) {
+            return super.transfer(from, to, fromAmount, fromCurrency, toAmount, toCurrency, world);
+        }
+        Connection connection = null;
+        boolean restoreAutoCommit = false;
+        try {
+            connection = db.getConnection();
+            connection.setAutoCommit(false);
+            restoreAutoCommit = true;
+
+            if (applyDelta(connection, from, -fromAmount, fromCurrency, world, 0.0) == 0) {
+                connection.rollback();
+                return false;
+            }
+            if (applyDelta(connection, to, toAmount, toCurrency, world, null) == 0) {
+                // No row for the payee yet; create it inside the same transaction.
+                insertBalance(connection, to, toAmount, toCurrency, world);
+            }
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackError) {
+                    rollbackError.printStackTrace();
+                }
+            }
+            e.printStackTrace();
+            throw new BackendErrorException(e.getMessage());
+        } finally {
+            if (connection != null && restoreAutoCommit) {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            Tools.closeJDBCConnection(connection);
+        }
+    }
+
+    private int applyDelta(Connection connection, Account account, double amount, Currency currency, String world, Double minimum) throws SQLException {
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(balanceTable.addToEntry);
+            statement.setDouble(1, amount);
+            statement.setInt(2, account.getId());
+            statement.setString(3, currency.getName());
+            statement.setString(4, world);
+            statement.setDouble(5, amount);
+            statement.setDouble(6, minimum != null ? minimum : -Double.MAX_VALUE);
+            return statement.executeUpdate();
+        } finally {
+            Tools.closeJDBCStatement(statement);
+        }
+    }
+
+    private void insertBalance(Connection connection, Account account, double amount, Currency currency, String world) throws SQLException {
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(balanceTable.insertEntry);
+            statement.setDouble(1, amount);
+            statement.setString(2, world);
+            statement.setString(3, account.getAccountName());
+            statement.setBoolean(4, account.isBankAccount());
+            statement.setString(5, currency.getName());
+            statement.executeUpdate();
+        } finally {
+            Tools.closeJDBCStatement(statement);
         }
     }
 

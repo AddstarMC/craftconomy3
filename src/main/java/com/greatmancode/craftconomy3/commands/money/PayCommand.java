@@ -46,22 +46,20 @@ public class PayCommand extends AbstractCommand {
                     currency = checkCurrencyExists(sender,args[2]);
                     if(currency == null)return;
                 }
-                boolean hasEnough = Common.getInstance().getAccountManager().getAccount(sender.getName(), false).hasEnough
-                        (amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()), currency.getName());
+                Account from = Common.getInstance().getAccountManager().getAccount(sender.getName(), false);
+                Account to = Common.getInstance().getAccountManager().getAccount(args[0], false);
+                String worldGroup = Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid());
 
-                if (hasEnough) {
-                    Account from = Common.getInstance().getAccountManager().getAccount(sender.getName(), false);
-                    Account to = Common.getInstance().getAccountManager().getAccount(args[0], false);
+                // Allow cancelling the pay event
+                final PayAccountEvent ev = new PayAccountEvent(from, to, amount);
+                Bukkit.getServer().getPluginManager().callEvent(ev);
+                if (ev.isCancelled()) return;
 
-                    // Allow cancelling the pay event
-                    final PayAccountEvent ev = new PayAccountEvent(from, to, amount);
-                    Bukkit.getServer().getPluginManager().callEvent(ev);
-                    if (ev.isCancelled()) return;
+                // Both legs commit together; the funds check happens inside the
+                // transfer so it cannot go stale between checking and paying.
+                boolean paid = from.transfer(to, amount, worldGroup, currency.getName(), Cause.PAYMENT, args[0]);
 
-                    from.withdraw(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()),
-                            currency.getName(), Cause.PAYMENT, args[0]);
-                    to.deposit(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()),
-                            currency.getName(), Cause.PAYMENT, sender.getName());
+                if (paid) {
                     sendMessage(sender, Common.getInstance().getLanguageManager().parse("money_pay_sent", Common.getInstance().format(null, currency, amount), args[0]));
                     Player reciever = Common.getInstance().getServerCaller().getPlayerCaller().getOnlinePlayer(args[0]);
                     if (reciever != null) {

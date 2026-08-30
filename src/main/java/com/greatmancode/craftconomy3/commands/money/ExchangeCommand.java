@@ -44,12 +44,14 @@ public class ExchangeCommand extends AbstractCommand {
                 try {
                     double exchangeRate = currency1.getExchangeRate(currency2);
                     Account account = Common.getInstance().getAccountManager().getAccount(sender.getName(), false);
-                    if (account.hasEnough(amount, Common.getInstance().getServerCaller().getPlayerCaller()
-                            .getPlayerWorld(sender.getUuid()), currency1.getName())) {
-                        double value = amount * exchangeRate;
-                        account.withdraw(amount, Common.getInstance().getServerCaller().getPlayerCaller().getPlayerWorld(sender.getUuid()), currency1.getName(), Cause.EXCHANGE, currency2.getName());
-                        account.deposit(value, Common.getInstance().getServerCaller().getPlayerCaller().getPlayerWorld(sender.getUuid()), currency2.getName(), Cause.EXCHANGE, currency1.getName());
+                    double value = amount * exchangeRate;
+                    String world = Common.getInstance().getServerCaller().getPlayerCaller().getPlayerWorld(sender.getUuid());
+                    // Both sides commit together, so a failure cannot consume the
+                    // source currency without granting the destination one.
+                    if (account.exchange(amount, currency1, value, currency2, world, Cause.EXCHANGE, currency2.getName())) {
                         sendMessage(sender, Common.getInstance().getLanguageManager().parse("exchange_done", amount, currency1.getName(), value, currency2.getName()));
+                    } else {
+                        sendMessage(sender, Common.getInstance().getLanguageManager().getString("not_enough_money"));
                     }
                 } catch (NoExchangeRate noExchangeRate) {
                     sendMessage(sender, Common.getInstance().getLanguageManager().parse("no_exchange_rate", currency1.getName(), currency2.getName()));

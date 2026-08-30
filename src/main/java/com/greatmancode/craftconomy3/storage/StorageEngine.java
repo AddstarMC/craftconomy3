@@ -178,6 +178,51 @@ public abstract class StorageEngine {
     }
 
     /**
+     * Move money from one account to another as a single unit of work.
+     *
+     * Implementations that support transactions must ensure the debit and the
+     * credit either both apply or neither does, so a failure part way through
+     * cannot destroy money. The debit is subject to a zero floor: if the payer
+     * cannot cover the amount, nothing is written and false is returned.
+     *
+     * The default implementation is non-transactional and is kept only for
+     * backends that cannot express one.
+     *
+     * @param from     The account being debited
+     * @param to       The account being credited
+     * @param amount   The amount to move; must not be negative
+     * @param currency The Currency
+     * @param world    The world group
+     * @return true if the money moved, false if the payer had insufficient funds
+     */
+    public boolean transfer(Account from, Account to, double amount, Currency currency, String world) {
+        return transfer(from, to, amount, currency, amount, currency, world);
+    }
+
+    /**
+     * Move money as a single unit of work, allowing the debited and credited
+     * sides to differ. This covers a currency exchange, where one account is
+     * debited in one currency and credited in another at the exchange rate.
+     *
+     * @param from         The account being debited
+     * @param to           The account being credited
+     * @param fromAmount   The amount to take, in fromCurrency
+     * @param fromCurrency The currency being debited
+     * @param toAmount     The amount to give, in toCurrency
+     * @param toCurrency   The currency being credited
+     * @param world        The world group
+     * @return true if the money moved, false if there were insufficient funds
+     */
+    public boolean transfer(Account from, Account to, double fromAmount, Currency fromCurrency,
+                            double toAmount, Currency toCurrency, String world) {
+        if (changeBalance(from, -fromAmount, fromCurrency, world, 0.0) == null) {
+            return false;
+        }
+        changeBalance(to, toAmount, toCurrency, world, null);
+        return true;
+    }
+
+    /**
      * Set if the account have infinite money
      *
      * @param account  The account to modify

@@ -25,6 +25,8 @@ import com.greatmancode.craftconomy3.LogInfo;
 import com.greatmancode.craftconomy3.currency.Currency;
 import com.greatmancode.tools.events.event.EconomyChangeEvent;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -278,6 +280,105 @@ public class Account {
     }
 
     /**
+     * Move money from this account to another as a single unit of work.
+     *
+     * Unlike calling withdraw and then deposit, both legs commit together, so
+     * a failure part way through cannot leave money debited from the payer but
+     * never credited to the payee.
+     *
+     * @param destination  The account to credit
+     * @param amount       The amount to move
+     * @param world        The World / World group
+     * @param currencyName The currency to move
+     * @param cause        The cause of the change
+     * @param causeReason  The reason of the cause
+     * @return true if the money moved, false if there were insufficient funds
+     */
+    public boolean transfer(Account destination, double amount, String world, String currencyName, Cause cause, String causeReason) {
+        if (!Common.getInstance().getWorldGroupManager().worldGroupExist(world)) {
+            world = Common.getInstance().getWorldGroupManager().getWorldGroupName(world);
+        }
+        Currency currency = Common.getInstance().getCurrencyManager().getCurrency(currencyName);
+        if (currency == null) {
+            return false;
+        }
+        double value = format(amount);
+
+        // An infinite-money account is not backed by a real balance row, so
+        // there is only ever one real side to write and nothing to keep
+        // consistent between the two.
+        if (hasInfiniteMoney() || destination.hasInfiniteMoney()) {
+            if (!hasInfiniteMoney()) {
+                Double remaining = Common.getInstance().getStorageHandler().getStorageEngine()
+                        .changeBalance(this, -value, currency, world, 0.0);
+                if (remaining == null) {
+                    return false;
+                }
+                Common.getInstance().writeLog(LogInfo.WITHDRAW, cause, causeReason, this, value, currency, world);
+                Common.getInstance().getServerCaller().throwEvent(
+                        new EconomyChangeEvent(this.getAccountName(), remaining));
+            }
+            if (!destination.hasInfiniteMoney()) {
+                destination.deposit(value, world, currencyName, cause, causeReason);
+            }
+            return true;
+        }
+
+        boolean moved = Common.getInstance().getStorageHandler().getStorageEngine()
+                .transfer(this, destination, value, currency, world);
+        if (!moved) {
+            return false;
+        }
+
+        Common.getInstance().writeLog(LogInfo.WITHDRAW, cause, causeReason, this, value, currency, world);
+        Common.getInstance().writeLog(LogInfo.DEPOSIT, cause, causeReason, destination, value, currency, world);
+        Common.getInstance().getServerCaller().throwEvent(
+                new EconomyChangeEvent(this.getAccountName(), getBalance(world, currencyName)));
+        Common.getInstance().getServerCaller().throwEvent(
+                new EconomyChangeEvent(destination.getAccountName(), destination.getBalance(world, currencyName)));
+        return true;
+    }
+
+    /**
+     * Convert money from one currency to another within this account, as a
+     * single unit of work. Both sides commit together, so a failure cannot
+     * take the source currency without granting the destination one.
+     *
+     * @param fromAmount   The amount to convert
+     * @param fromCurrency The currency being spent
+     * @param toAmount     The amount to receive after the exchange rate
+     * @param toCurrency   The currency being received
+     * @param world        The World / World group
+     * @param cause        The cause of the change
+     * @param causeReason  The reason of the cause
+     * @return true if the exchange happened, false if there were insufficient funds
+     */
+    public boolean exchange(double fromAmount, Currency fromCurrency, double toAmount, Currency toCurrency,
+                            String world, Cause cause, String causeReason) {
+        if (!Common.getInstance().getWorldGroupManager().worldGroupExist(world)) {
+            world = Common.getInstance().getWorldGroupManager().getWorldGroupName(world);
+        }
+        if (fromCurrency == null || toCurrency == null) {
+            return false;
+        }
+        if (hasInfiniteMoney()) {
+            return true;
+        }
+        double take = format(fromAmount);
+        double give = format(toAmount);
+        boolean done = Common.getInstance().getStorageHandler().getStorageEngine()
+                .transfer(this, this, take, fromCurrency, give, toCurrency, world);
+        if (!done) {
+            return false;
+        }
+        Common.getInstance().writeLog(LogInfo.WITHDRAW, cause, causeReason, this, take, fromCurrency, world);
+        Common.getInstance().writeLog(LogInfo.DEPOSIT, cause, causeReason, this, give, toCurrency, world);
+        Common.getInstance().getServerCaller().throwEvent(
+                new EconomyChangeEvent(this.getAccountName(), getBalance(world, toCurrency.getName())));
+        return true;
+    }
+
+    /**
      * Checks if we have enough money in a certain balance
      *
      * @param amount       The amount of money to check
@@ -345,14 +446,23 @@ public class Account {
      * @return The formatted double
      */
     public static double format(double value) {
-        if (value == Double.MAX_VALUE) {
+        if (value == Double.MAX_VALUE || value == Double.MIN_NORMAL) {
+            return value;
+        }
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
             return value;
         }
 
-        long factor = (long) Math.pow(10, 2);
-        value = value * factor;
-        double tmp = Math.floor(value);
-        return tmp / factor;
+        // Truncate to two decimal places, matching long-standing behaviour:
+        // a sub-cent amount is never rounded up into a whole cent.
+        //
+        // This uses DOWN rather than the previous Math.floor, which rounded
+        // toward negative infinity and so treated negative values differently
+        // from positive ones. Going through BigDecimal also avoids the
+        // multiply-by-100 float artefacts of the old implementation.
+        return BigDecimal.valueOf(value)
+                .setScale(2, RoundingMode.DOWN)
+                .doubleValue();
     }
 
     /**

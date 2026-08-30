@@ -53,12 +53,10 @@ public class BankDepositCommand extends AbstractCommand {
                             if(currency == null)return;
                         }
                         Account playerAccount = Common.getInstance().getAccountManager().getAccount(player.getName(), false);
-                        if (playerAccount.hasEnough(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()),
-                                currency.getName())) {
-                            playerAccount.withdraw(amount, Account.getWorldGroupOfPlayerCurrentlyIn(player.getUuid()),
-                                    currency.getName(), Cause.BANK_DEPOSIT, bankAccount.getAccountName());
-                            bankAccount.deposit(amount, Account.getWorldGroupOfPlayerCurrentlyIn(player.getUuid()),
-                                    currency.getName(), Cause.BANK_DEPOSIT, sender.getName());
+                        // Both legs commit together, so a failure cannot take the
+                        // money off the player without crediting the bank.
+                        if (playerAccount.transfer(bankAccount, amount, Account.getWorldGroupOfPlayerCurrentlyIn(player.getUuid()),
+                                currency.getName(), Cause.BANK_DEPOSIT, bankAccount.getAccountName())) {
                             sendMessage(player, Common
                                     .getInstance().getLanguageManager().parse("deposited", Common.getInstance().format(null, currency, amount), args[0]));
                         } else {

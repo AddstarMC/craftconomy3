@@ -52,10 +52,10 @@ public class BankWithdrawCommand extends AbstractCommand {
                         }
                     }
                     Account playerAccount = Common.getInstance().getAccountManager().getAccount(sender.getName(), false);
-                    if (bankAccount.hasEnough(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()), currency.getName())) {
-                        bankAccount.withdraw(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()),
-                                currency.getName(), Cause.BANK_WITHDRAW, sender.getName());
-                        playerAccount.deposit(amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()), currency.getName(), Cause.BANK_WITHDRAW, bankAccount.getAccountName());
+                    // Both legs commit together, so a failure cannot take the
+                    // money out of the bank without crediting the player.
+                    if (bankAccount.transfer(playerAccount, amount, Account.getWorldGroupOfPlayerCurrentlyIn(sender.getUuid()),
+                            currency.getName(), Cause.BANK_WITHDRAW, sender.getName())) {
                         //TODO: Language
                         sendMessage(sender, "{{DARK_GREEN}}Withdrawed {{WHITE}}" + Common.getInstance().format(null, currency, amount) + "{{DARK_GREEN}} from the {{WHITE}}" + args[0] + "{{DARK_GREEN}} bank Account.");
                     } else {
