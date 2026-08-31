@@ -90,10 +90,6 @@ public class AccountTable extends DatabaseTable {
     public final String releaseNameFromOtherAccounts =
             "UPDATE " + getPrefix() + TABLE_NAME + " SET name=NULL WHERE name=? AND uuid<>? AND bank=false";
 
-    /** Accounts with no name, for the backfill task to resolve. */
-    public final String selectNamelessAccounts =
-            "SELECT uuid FROM " + getPrefix() + TABLE_NAME + " WHERE name IS NULL AND uuid IS NOT NULL AND uuid<>'' AND bank=false";
-
     // Constrained to rows that do not already have a uuid: without this it
     // rewrote the uuid of every row sharing the name, which on a duplicate
     // could hand one player another player's account.

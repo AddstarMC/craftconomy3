@@ -35,7 +35,6 @@ import com.greatmancode.craftconomy3.currency.CurrencyManager;
 import com.greatmancode.craftconomy3.events.EventManager;
 import com.greatmancode.craftconomy3.groups.WorldGroupsManager;
 import com.greatmancode.craftconomy3.storage.StorageHandler;
-import com.greatmancode.craftconomy3.utils.NameBackfillTask;
 import com.greatmancode.tools.caller.bukkit.BukkitServerCaller;
 import com.greatmancode.tools.caller.unittest.UnitTestServerCaller;
 import com.greatmancode.tools.commands.CommandHandler;
@@ -73,7 +72,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
     private ServerCaller serverCaller = null;
     private boolean databaseInitialized = false;
     private boolean vaultReady = false;
-    private int nameBackfillTaskId = -1;
     private boolean currencyInitialized = false;
     private static boolean initialized = false;
     private Config mainConfig = null;
@@ -139,26 +137,8 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
             getServerCaller().registerPermission("craftconomy.money.log.others");
             initialized = true;
             if (vaultReady) {
-                startNameBackfill();
-            }
-            if (vaultReady) {
                 registerVaultEconomy();
             }
-        }
-    }
-
-    /**
-     * Periodically restore names to accounts that had theirs claimed by
-     * another player. The scheduler multiplies its delays by 20 ticks, so
-     * these values are in seconds: first run a minute after start up, then
-     * every six hours.
-     */
-    private void startNameBackfill() {
-        try {
-            nameBackfillTaskId = getServerCaller().getSchedulerCaller()
-                    .schedule(new NameBackfillTask(), 60, 6 * 60 * 60, true);
-        } catch (Throwable e) {
-            sendConsoleMessage(Level.WARNING, "Unable to start the account name backfill task: " + e.getMessage());
         }
     }
 
@@ -190,10 +170,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
      */
     @Override
     public void onDisable() {
-        if (nameBackfillTaskId != -1) {
-            getServerCaller().getSchedulerCaller().cancelSchedule(nameBackfillTaskId);
-            nameBackfillTaskId = -1;
-        }
         if (getStorageHandler() != null) {
             getLogger().info(getLanguageManager().getString("closing_db_link"));
             getStorageHandler().disable();

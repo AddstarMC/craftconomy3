@@ -231,13 +231,6 @@ public abstract class StorageEngine {
     public abstract int releaseNameFromOtherAccounts(String name, UUID uuid);
 
     /**
-     * Accounts left without a name, for the backfill task to resolve.
-     *
-     * @return the uuids of nameless accounts
-     */
-    public abstract List<UUID> getNamelessAccountUuids();
-
-    /**
      * Set if the account have infinite money
      *
      * @param account  The account to modify

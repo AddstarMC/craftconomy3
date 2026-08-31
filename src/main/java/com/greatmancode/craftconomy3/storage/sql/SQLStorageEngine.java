@@ -768,31 +768,6 @@ public abstract class SQLStorageEngine extends StorageEngine {
     }
 
     @Override
-    public List<UUID> getNamelessAccountUuids() {
-        List<UUID> result = new ArrayList<>();
-        Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            connection = db.getConnection();
-            statement = connection.prepareStatement(accountTable.selectNamelessAccounts);
-            ResultSet set = statement.executeQuery();
-            while (set.next()) {
-                try {
-                    result.add(UUID.fromString(set.getString("uuid")));
-                } catch (IllegalArgumentException e) {
-                    // A malformed uuid is not worth failing the whole sweep over.
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            Tools.closeJDBCStatement(statement);
-            Tools.closeJDBCConnection(connection);
-        }
-        return result;
-    }
-
-    @Override
     public void updateUUID(String name, UUID uuid) {
         Connection connection = null;
         PreparedStatement statement = null;

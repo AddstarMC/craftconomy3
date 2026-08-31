@@ -100,7 +100,13 @@ public class BalanceTable extends DatabaseTable {
                " ON " + getPrefix() + TABLE_NAME + ".username_id = " + getPrefix() + AccountTable.TABLE_NAME + ".id " +
             "LEFT JOIN " + getPrefix() + CurrencyTable.TABLE_NAME + " " +
                " ON " + getPrefix() + TABLE_NAME + ".currency_id = " + getPrefix() + CurrencyTable.TABLE_NAME + ".name " +
-            "WHERE " + WORLD_NAME_FIELD + "=? AND " + getPrefix() + CurrencyTable.TABLE_NAME + ".name=? ORDER BY balance DESC LIMIT ?,?";
+            "WHERE " + WORLD_NAME_FIELD + "=? AND " + getPrefix() + CurrencyTable.TABLE_NAME + ".name=? " +
+                 // An account whose name was released to another player has no
+                 // name until its owner logs in again. Leaving it in would put
+                 // a literal "null" on the leaderboard and hand the same to any
+                 // placeholder or hologram plugin reading it.
+                 "AND " + getPrefix() + AccountTable.TABLE_NAME + ".name IS NOT NULL " +
+            "ORDER BY balance DESC LIMIT ?,?";
 
     public BalanceTable(String prefix) {
         super(prefix);
