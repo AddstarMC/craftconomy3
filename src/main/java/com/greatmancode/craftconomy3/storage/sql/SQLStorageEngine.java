@@ -119,9 +119,8 @@ public abstract class SQLStorageEngine extends StorageEngine {
                 } else {
                     statement.setString(2, null);
                 }
-                statement.setString(3, name);
-                statement.setBoolean(4, bankAccount);
-                statement.setString(5, Common.getInstance().getCurrencyManager().getDefaultCurrency().getName());
+                statement.setInt(3, id);
+                statement.setString(4, Common.getInstance().getCurrencyManager().getDefaultCurrency().getName());
                 statement.executeUpdate();
                 statement.close();
             }
@@ -190,15 +189,14 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(logTable.insertEntry);
-            statement.setString(1, account.getAccountName());
-            statement.setBoolean(2, account.isBankAccount());
-            statement.setString(3, info.toString());
-            statement.setString(4, cause.toString());
-            statement.setString(5, causeReason);
-            statement.setString(6, worldName);
-            statement.setDouble(7, amount);
-            statement.setString(8, currency.getName());
-            statement.setTimestamp(9, timestamp);
+            statement.setInt(1, account.getId());
+            statement.setString(2, info.toString());
+            statement.setString(3, cause.toString());
+            statement.setString(4, causeReason);
+            statement.setString(5, worldName);
+            statement.setDouble(6, amount);
+            statement.setString(7, currency.getName());
+            statement.setTimestamp(8, timestamp);
             statement.executeUpdate();
         } catch (SQLException e) {
             // A silently dropped audit row is worse than a noisy failure.
@@ -267,7 +265,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(balanceTable.selectAllEntryAccount);
-            statement.setString(1, account.getAccountName());
+            statement.setInt(1, account.getId());
 
             ResultSet set = statement.executeQuery();
             while (set.next()) {
@@ -290,7 +288,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(balanceTable.selectWorldEntryAccount);
-            statement.setString(1, account.getAccountName());
+            statement.setInt(1, account.getId());
             statement.setString(2, worldName);
             ResultSet set = statement.executeQuery();
             while (set.next()) {
@@ -313,7 +311,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(balanceTable.selectWorldCurrencyEntryAccount);
-            statement.setString(1, account.getAccountName());
+            statement.setInt(1, account.getId());
             statement.setString(2, world);
             statement.setString(3, currency.getName());
             ResultSet set = statement.executeQuery();
@@ -342,7 +340,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(balanceTable.selectWorldCurrencyEntryAccount);
-            statement.setString(1, account.getAccountName());
+            statement.setInt(1, account.getId());
             statement.setString(2, world);
             statement.setString(3, currency.getName());
             ResultSet set = statement.executeQuery();
@@ -362,9 +360,8 @@ public abstract class SQLStorageEngine extends StorageEngine {
                 statement = connection.prepareStatement(balanceTable.insertEntry);
                 statement.setDouble(1, result);
                 statement.setString(2, world);
-                statement.setString(3, account.getAccountName());
-                statement.setBoolean(4, account.isBankAccount());
-                statement.setString(5, currency.getName());
+                statement.setInt(3, account.getId());
+                statement.setString(4, currency.getName());
                 statement.executeUpdate();
                 statement.close();
             }
@@ -495,9 +492,8 @@ public abstract class SQLStorageEngine extends StorageEngine {
             statement = connection.prepareStatement(balanceTable.insertEntry);
             statement.setDouble(1, amount);
             statement.setString(2, world);
-            statement.setString(3, account.getAccountName());
-            statement.setBoolean(4, account.isBankAccount());
-            statement.setString(5, currency.getName());
+            statement.setInt(3, account.getId());
+            statement.setString(4, currency.getName());
             statement.executeUpdate();
         } finally {
             Tools.closeJDBCStatement(statement);
@@ -508,7 +504,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         PreparedStatement statement = null;
         try {
             statement = connection.prepareStatement(balanceTable.selectWorldCurrencyEntryAccount);
-            statement.setString(1, account.getAccountName());
+            statement.setInt(1, account.getId());
             statement.setString(2, world);
             statement.setString(3, currency.getName());
             return statement.executeQuery().next();
@@ -563,8 +559,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(accessTable.selectEntry);
-            statement.setString(1, account.getAccountName());
-            statement.setBoolean(2, account.isBankAccount());
+            statement.setInt(1, account.getId());
             ResultSet set = statement.executeQuery();
             while (set.next()) {
                 result.put(set.getString("playerName"), new AccountACLValue(set.getBoolean("deposit"), set.getBoolean("withdraw"), set.getBoolean("acl"), set.getBoolean("balance"), set.getBoolean("owner")));
@@ -585,9 +580,8 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(accessTable.selectEntryUnique);
-            statement.setString(1, account.getAccountName());
-            statement.setBoolean(2, account.isBankAccount());
-            statement.setString(3, name);
+            statement.setInt(1, account.getId());
+            statement.setString(2, name);
             ResultSet set = statement.executeQuery();
             if (set.next()) {
                 statement.close();
@@ -597,20 +591,18 @@ public abstract class SQLStorageEngine extends StorageEngine {
                 statement.setBoolean(3, deposit);
                 statement.setBoolean(4, acl);
                 statement.setBoolean(5, withdraw);
-                statement.setString(6, account.getAccountName());
-                statement.setBoolean(7, account.isBankAccount());
-                statement.setString(8, name);
+                statement.setInt(6, account.getId());
+                statement.setString(7, name);
             } else {
                 statement.close();
                 statement = connection.prepareStatement(accessTable.insertEntry);
-                statement.setString(1, account.getAccountName());
-                statement.setBoolean(2, account.isBankAccount());
-                statement.setString(3, name);
-                statement.setBoolean(4, owner);
-                statement.setBoolean(5, balance);
-                statement.setBoolean(6, deposit);
-                statement.setBoolean(7, acl);
-                statement.setBoolean(8, withdraw);
+                statement.setInt(1, account.getId());
+                statement.setString(2, name);
+                statement.setBoolean(3, owner);
+                statement.setBoolean(4, balance);
+                statement.setBoolean(5, deposit);
+                statement.setBoolean(6, acl);
+                statement.setBoolean(7, withdraw);
                 statement.executeUpdate();
             }
         } catch (SQLException e) {
@@ -757,6 +749,50 @@ public abstract class SQLStorageEngine extends StorageEngine {
     }
 
     @Override
+    public int releaseNameFromOtherAccounts(String name, UUID uuid) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = db.getConnection();
+            statement = connection.prepareStatement(accountTable.releaseNameFromOtherAccounts);
+            statement.setString(1, name);
+            statement.setString(2, uuid.toString());
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        } finally {
+            Tools.closeJDBCStatement(statement);
+            Tools.closeJDBCConnection(connection);
+        }
+    }
+
+    @Override
+    public List<UUID> getNamelessAccountUuids() {
+        List<UUID> result = new ArrayList<>();
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = db.getConnection();
+            statement = connection.prepareStatement(accountTable.selectNamelessAccounts);
+            ResultSet set = statement.executeQuery();
+            while (set.next()) {
+                try {
+                    result.add(UUID.fromString(set.getString("uuid")));
+                } catch (IllegalArgumentException e) {
+                    // A malformed uuid is not worth failing the whole sweep over.
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            Tools.closeJDBCStatement(statement);
+            Tools.closeJDBCConnection(connection);
+        }
+        return result;
+    }
+
+    @Override
     public void updateUUID(String name, UUID uuid) {
         Connection connection = null;
         PreparedStatement statement = null;
@@ -847,7 +883,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(logTable.selectEntryLimit);
-            statement.setString(1, user.getAccountName());
+            statement.setInt(1, user.getId());
             statement.setInt(2, (page - 1) * LogCommand.ENTRIES_PER_PAGE);
             statement.setInt(3, LogCommand.ENTRIES_PER_PAGE);
             ResultSet set = statement.executeQuery();
@@ -871,7 +907,7 @@ public abstract class SQLStorageEngine extends StorageEngine {
         try {
             connection = db.getConnection();
             statement = connection.prepareStatement(logTable.countEntry);
-            statement.setString(1, user.getAccountName());
+            statement.setInt(1, user.getId());
             ResultSet set = statement.executeQuery();
             if (set.next()) {
                 count = set.getInt(1);

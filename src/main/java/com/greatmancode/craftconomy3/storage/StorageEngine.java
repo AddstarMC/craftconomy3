@@ -222,6 +222,22 @@ public abstract class StorageEngine {
     }
 
     /**
+     * Clear a name from every account that is not the given uuid's.
+     *
+     * @param name The name being claimed
+     * @param uuid The uuid claiming it
+     * @return how many stale accounts had the name taken off them
+     */
+    public abstract int releaseNameFromOtherAccounts(String name, UUID uuid);
+
+    /**
+     * Accounts left without a name, for the backfill task to resolve.
+     *
+     * @return the uuids of nameless accounts
+     */
+    public abstract List<UUID> getNamelessAccountUuids();
+
+    /**
      * Set if the account have infinite money
      *
      * @param account  The account to modify

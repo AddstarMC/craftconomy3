@@ -55,26 +55,24 @@ public class BalanceTable extends DatabaseTable {
 
     public final String selectAllEntryAccount =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ")";
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ?";
 
     public final String selectWorldEntryAccount =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ") " +
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ? " +
                    "AND " + WORLD_NAME_FIELD + "=?";
 
     public final String selectWorldCurrencyEntryAccount =
             "SELECT balance, worldName, currency_id, username_id FROM " + getPrefix() + TABLE_NAME + " " +
             "LEFT JOIN " + getPrefix() + CurrencyTable.TABLE_NAME + " " +
               "ON " + getPrefix() + TABLE_NAME + ".currency_id = " + getPrefix() + CurrencyTable.TABLE_NAME + ".name " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ") " +
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ? " +
                    "AND " + WORLD_NAME_FIELD + "=? AND " + getPrefix() + CurrencyTable.TABLE_NAME + ".name=?";
 
     public final String insertEntry =
             "INSERT INTO " + getPrefix() + TABLE_NAME + " " +
             "(" + BALANCE_FIELD + ", " + WORLD_NAME_FIELD + ", username_id, currency_id) " +
-            "VALUES (?, ?, (SELECT id from " + getPrefix() + AccountTable.TABLE_NAME + " " +
-                           "WHERE " + getPrefix() + AccountTable.TABLE_NAME + ".name=? AND bank=?)," +
-                    "?)";
+            "VALUES (?, ?, ?, ?)";
 
     /**
      * Applies a delta to an existing balance in a single statement, so that

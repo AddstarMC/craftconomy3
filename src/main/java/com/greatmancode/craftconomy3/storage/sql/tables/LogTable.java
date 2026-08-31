@@ -55,21 +55,20 @@ public class LogTable extends DatabaseTable {
     public final String insertEntry =
             "INSERT INTO " + getPrefix() + TABLE_NAME + " " +
             "(username_id, type, cause, causeReason, worldName, amount, currency_id, timestamp) " +
-            "VALUES ((SELECT id from " + getPrefix() + AccountTable.TABLE_NAME + " " +
-            "WHERE name=? AND bank=?),?,?,?,?,?,?,?)";
+            "VALUES (?,?,?,?,?,?,?,?)";
 
     public final String selectEntry =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ")";
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ?";
 
     public final String selectEntryLimit =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ") " +
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ? " +
             "ORDER BY " + getPrefix() + TABLE_NAME + ".id DESC LIMIT ?,?";
 
     public final String countEntry =
             "SELECT COUNT(*) FROM " + getPrefix() + TABLE_NAME + " " +
-            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ")";
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = ?";
 
     public final String cleanEntry = "DELETE FROM " + getPrefix() + TABLE_NAME + " WHERE timestamp <= ?";
 

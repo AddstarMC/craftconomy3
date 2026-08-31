@@ -51,17 +51,45 @@ public class EventManager implements Listener {
         }
     }
 
+    /**
+     * Clear a name off any account that is not this player's.
+     *
+     * Only called when the name a player is joining under is not already
+     * recorded against their uuid, so an unchanged login does no extra work.
+     */
+    private void releaseNameFromStaleAccounts(String name, java.util.UUID uuid) {
+        int released = Common.getInstance().getStorageHandler().getStorageEngine()
+                .releaseNameFromOtherAccounts(name, uuid);
+        if (released > 0) {
+            Common.getInstance().getAccountManager().clearCache(name);
+            Common.getInstance().getLogger().info("Released the name '" + name + "' from "
+                    + released + " stale account(s) so " + uuid + " can use it.");
+        }
+    }
+
     @EventHandler
     public void PreJoinEvent(PreJoinEvent event) {
         if (!Common.getInstance().getMainConfig().getBoolean("System.Setup",true)) {
+            String name = event.getName().toLowerCase();
+
             //We search if the UUID is in the database
             Account account = Common.getInstance().getStorageHandler().getStorageEngine().getAccount(event.getUuid());
-            if (account != null && !event.getName().equals(account.getAccountName())) {
+            if (account != null && !name.equals(account.getAccountName())) {
+                // This player is using a name we have not seen them under. If
+                // somebody who renamed away still holds it, take it off their
+                // account first, otherwise both rows end up with the same name
+                // and every name based lookup for either of them fails. That
+                // account keeps its balance and uuid; only the name goes, and
+                // the backfill task restores their current one later.
+                releaseNameFromStaleAccounts(name, event.getUuid());
                 Common.getInstance().getAccountManager().clearCache(account.getAccountName());
-                Common.getInstance().getStorageHandler().getStorageEngine().updateUsername(event.getName().toLowerCase(), event.getUuid());
+                Common.getInstance().getStorageHandler().getStorageEngine().updateUsername(name, event.getUuid());
             } else if (account == null){
+                // First time we have seen this uuid, so the name may still be
+                // held by whoever used it before.
+                releaseNameFromStaleAccounts(name, event.getUuid());
                 //We set deh UUID
-                Common.getInstance().getStorageHandler().getStorageEngine().updateUUID(event.getName(), event.getUuid());
+                Common.getInstance().getStorageHandler().getStorageEngine().updateUUID(name, event.getUuid());
             }
         }
     }

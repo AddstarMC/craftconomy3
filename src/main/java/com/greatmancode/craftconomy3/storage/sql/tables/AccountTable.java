@@ -79,11 +79,27 @@ public class AccountTable extends DatabaseTable {
 
     public final String updateNameByUuid = "UPDATE " + getPrefix() + TABLE_NAME + " SET name=? WHERE uuid=?";
 
-    public final String updateUuidByName = "UPDATE " + getPrefix() + TABLE_NAME + " SET uuid=? WHERE name=?";
+    /**
+     * Release a name from any row that is not the given uuid's.
+     *
+     * A player can rename away and never return, leaving their old name on
+     * their row; if somebody else later takes that name, two rows end up
+     * sharing it. Clearing the name from the stale row keeps its balance and
+     * uuid intact while making the name unambiguous again.
+     */
+    public final String releaseNameFromOtherAccounts =
+            "UPDATE " + getPrefix() + TABLE_NAME + " SET name=NULL WHERE name=? AND uuid<>? AND bank=false";
 
-    public static String sqlAccountIDbyName(String prefix){
-        return "SELECT id FROM " + prefix + AccountTable.TABLE_NAME + " WHERE name =?";
-    }
+    /** Accounts with no name, for the backfill task to resolve. */
+    public final String selectNamelessAccounts =
+            "SELECT uuid FROM " + getPrefix() + TABLE_NAME + " WHERE name IS NULL AND uuid IS NOT NULL AND uuid<>'' AND bank=false";
+
+    // Constrained to rows that do not already have a uuid: without this it
+    // rewrote the uuid of every row sharing the name, which on a duplicate
+    // could hand one player another player's account.
+    public final String updateUuidByName =
+            "UPDATE " + getPrefix() + TABLE_NAME + " SET uuid=? WHERE name=? AND (uuid IS NULL OR uuid='') AND bank=false";
+
     public static String sqlAccountIDbyUUID(String prefix) {
         return "SELECT id FROM " + prefix + AccountTable.TABLE_NAME + " WHERE uuid =?";
     }

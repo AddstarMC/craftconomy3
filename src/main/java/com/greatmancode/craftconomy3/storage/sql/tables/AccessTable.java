@@ -70,24 +70,22 @@ public class AccessTable extends DatabaseTable {
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
             "LEFT JOIN " + getPrefix() + AccountTable.TABLE_NAME + " " +
               "ON " + getPrefix() + TABLE_NAME + ".account_id = " + getPrefix() + AccountTable.TABLE_NAME + ".id " +
-            "WHERE " + getPrefix() + AccountTable.TABLE_NAME + ".name=? AND " + getPrefix() + AccountTable.TABLE_NAME + ".bank=?";
+            "WHERE " + getPrefix() + TABLE_NAME + ".account_id=?";
 
     public final String selectEntryUnique =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
             "LEFT JOIN " + getPrefix() + AccountTable.TABLE_NAME + " " +
               "ON " + getPrefix() + TABLE_NAME + ".account_id = " + getPrefix() + AccountTable.TABLE_NAME + ".id " +
-            "WHERE " + getPrefix() + AccountTable.TABLE_NAME + ".name=? AND " + getPrefix() + AccountTable.TABLE_NAME + ".bank=? AND playerName=?";
+            "WHERE " + getPrefix() + TABLE_NAME + ".account_id=? AND playerName=?";
 
     public final String insertEntry =
             "INSERT INTO " + getPrefix() + TABLE_NAME + " " +
               "(account_id, playerName, owner, balance, deposit, acl, withdraw) " +
-            "VALUES((SELECT id from " + getPrefix() + AccountTable.TABLE_NAME + " " +
-            "WHERE name=? AND bank=?),?,?,?,?,?,?)";
+            "VALUES(?,?,?,?,?,?,?)";
 
     public final String updateEntry =
             "UPDATE " + getPrefix() + TABLE_NAME + " SET owner=? , balance=?, deposit=?, acl=?, withdraw=? " +
-            "WHERE account_id=(SELECT id FROM " + getPrefix() + AccountTable.TABLE_NAME + " WHERE name=? AND bank=?) " +
-                  "AND playerName=?";
+            "WHERE account_id=? AND playerName=?";
 
     public final String getAccountList =
             "SELECT * FROM " + getPrefix() + TABLE_NAME + " " +
