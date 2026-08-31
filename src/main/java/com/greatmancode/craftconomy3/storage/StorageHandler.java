@@ -20,9 +20,7 @@
 package com.greatmancode.craftconomy3.storage;
 
 import com.greatmancode.craftconomy3.Common;
-import com.greatmancode.craftconomy3.storage.sql.H2Engine;
 import com.greatmancode.craftconomy3.storage.sql.MySQLEngine;
-import com.greatmancode.craftconomy3.storage.sql.SQLiteEngine;
 
 /**
  * Created by greatman on 2014-07-13.
@@ -32,22 +30,12 @@ public class StorageHandler {
     private final StorageEngine engine;
 
     public StorageHandler() {
-        switch (Common.getInstance().getMainConfig().getString("System.Database.Type","h2")) {
-            case "h2":
-                engine = new H2Engine();
-                break;
-            case "mysql":
-                engine = new MySQLEngine();
-                break;
-            case "sqlite":
-                engine = new SQLiteEngine();
-                Common.getInstance().getLogger().severe("SQLite is now deprecated! Only supported method is retrieving the configuration for the format converter. It should be automaticly changed to h2 after the converter.");
-                break;
-            default:
-                engine = null;
-                Common.getInstance().getLogger().severe("Storage engine not supported!");
-                break;
+        String type = Common.getInstance().getMainConfig().getString("System.Database.Type", "mysql");
+        if (!"mysql".equalsIgnoreCase(type)) {
+            // H2 and SQLite were dropped; MySQL is the only supported backend.
+            Common.getInstance().getLogger().severe("Storage engine '" + type + "' is not supported. Craftconomy only supports MySQL; using it instead.");
         }
+        engine = new MySQLEngine();
     }
 
     /**
@@ -62,7 +50,9 @@ public class StorageHandler {
      * Disable the storage engine.
      */
     public void disable() {
-        engine.disable();
+        if (engine != null) {
+            engine.disable();
+        }
     }
 
 

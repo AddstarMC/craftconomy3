@@ -30,13 +30,11 @@ import com.greatmancode.craftconomy3.commands.group.GroupDelWorldCommand;
 import com.greatmancode.craftconomy3.commands.money.*;
 import com.greatmancode.craftconomy3.commands.pay.*;
 import com.greatmancode.craftconomy3.commands.setup.*;
-import com.greatmancode.craftconomy3.converter.H2ToMySQLConverter;
 import com.greatmancode.craftconomy3.currency.Currency;
 import com.greatmancode.craftconomy3.currency.CurrencyManager;
 import com.greatmancode.craftconomy3.events.EventManager;
 import com.greatmancode.craftconomy3.groups.WorldGroupsManager;
 import com.greatmancode.craftconomy3.storage.StorageHandler;
-import com.greatmancode.craftconomy3.utils.OldFormatConverter;
 import com.greatmancode.tools.caller.bukkit.BukkitServerCaller;
 import com.greatmancode.tools.caller.unittest.UnitTestServerCaller;
 import com.greatmancode.tools.commands.CommandHandler;
@@ -47,11 +45,8 @@ import com.greatmancode.tools.interfaces.caller.ServerCaller;
 import com.greatmancode.tools.language.LanguageManager;
 import com.greatmancode.tools.utils.ServicePriority;
 import com.greatmancode.tools.utils.Tools;
-import org.json.simple.parser.ParseException;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.logging.Level;
@@ -197,6 +192,10 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         displayFormat = null;
         holdings = 0.0;
         bankPrice = 0.0;
+        // Static state outlives the plugin instance, so anything left here
+        // keeps the previous load (and its class loader) alive across a reload.
+        CurrencyManager.clearDefaults();
+        instance = null;
     }
 
     /**
@@ -204,6 +203,14 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
      */
     public void reloadPlugin() {
         sendConsoleMessage(Level.INFO, "Starting up!");
+        // Release the previous connection pool. Without this every reload
+        // leaked a pool and its connections, eventually exhausting the
+        // database's connection limit for every server sharing it.
+        if (storageHandler != null) {
+            storageHandler.disable();
+            storageHandler = null;
+            databaseInitialized = false;
+        }
         sendConsoleMessage(Level.INFO, "Loading the Configuration");
         config = new ConfigurationManager(serverCaller);
         mainConfig = config.loadFile(serverCaller.getDataFolder(), "config.yml");
@@ -407,24 +414,9 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
             sendConsoleMessage(Level.INFO, getLanguageManager().getString("loading_database_manager"));
             storageHandler = new StorageHandler();
 
-            //TODO: Re-support that
-            if (getMainConfig().getBoolean("System.Database.ConvertFromH2",false)) {
-                convertDatabase();
-            }
-
             databaseInitialized = true;
             sendConsoleMessage(Level.INFO, getLanguageManager().getString("database_manager_loaded"));
         }
-    }
-
-    /**
-     * Convert from SQLite to MySQL
-     */
-    private void convertDatabase(){
-        sendConsoleMessage(Level.INFO, getLanguageManager().getString("starting_database_convert"));
-        new H2ToMySQLConverter().run();
-        sendConsoleMessage(Level.INFO, getLanguageManager().getString("convert_done"));
-        getMainConfig().setValue("System.Database.ConvertFromH2", false);
     }
 
     /**
@@ -665,7 +657,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         ccsetup.addCommand(new NewSetupDatabaseCommand("database"));
         ccsetup.addCommand(new NewSetupCurrencyCommand("currency"));
         ccsetup.addCommand(new NewSetupBasicCommand("basic"));
-        ccsetup.addCommand(new NewSetupConvertCommand("convert"));
         commandManager.registerMainCommand("ccsetup", ccsetup);
 
         SubCommand currency = new SubCommand("currency", commandManager, null, 1);
@@ -885,7 +876,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         languageManager.addLanguageEntry("bank_ignoreacl_cmd_help", "/bank ignoreacl <Account Name>  - Ignore the ACL system for that account.");
         languageManager.addLanguageEntry("account_is_ignoring_acl", "The account is now ignoring the ACL!");
         languageManager.addLanguageEntry("account_is_not_ignoring_acl", "The account is now following the ACL!");
-        languageManager.addLanguageEntry("starting_database_convert", "Starting database convertion to MySQL. This can take come time.");
         languageManager.addLanguageEntry("convert_save_account", "Converting accounts... (1/9)");
         languageManager.addLanguageEntry("convert_save_balance", "Converting balances... (2/9)");
         languageManager.addLanguageEntry("convert_save_access", "Converting bank access... (3/9)");
@@ -895,7 +885,6 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         languageManager.addLanguageEntry("convert_save_exchange", "Converting exchange... (7/9)");
         languageManager.addLanguageEntry("convert_save_worldgroup", "Converting worldgroups... (8/9)");
         languageManager.addLanguageEntry("convert_save_log", "Converting logs... (9/9)");
-        languageManager.addLanguageEntry("convert_done", "Conversion done!");
         languageManager.addLanguageEntry("config_reload_help_cmd", "/craftconomy reload - Reload craftconomy.");
         languageManager.addLanguageEntry("craftconomy_reloaded", "Craftconomy has been reloaded!");
         languageManager.addLanguageEntry("account_null", "Account was returned as null!!!");
@@ -920,7 +909,7 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         mainConfig.setValue("System.CreateOnLogin", false);
         mainConfig.setValue("System.SilentGiveCommand", false);
         mainConfig.setValue("System.Logging.Enabled", false);
-        mainConfig.setValue("System.Database.Type", "h2");
+        mainConfig.setValue("System.Database.Type", "mysql");
         mainConfig.setValue("System.Database.Address", "localhost");
         mainConfig.setValue("System.Database.Port", 3306);
         mainConfig.setValue("System.Database.Username", "root");
@@ -928,47 +917,17 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         mainConfig.setValue("System.Database.Db", "craftconomy");
         mainConfig.setValue("System.Database.Prefix", "cc3_");
         mainConfig.setValue("System.Database.Poolsize", 10);
-        mainConfig.setValue("System.Database.ConvertFromH2", false);
     }
 
     /**
      * Run a database update.
      */
     private void updateDatabase() {
-        if (getMainConfig().getInt("Database.dbVersion",0) == 0) {
-            alertOldDbVersion(0, 1);
-            //We first check if we have the DB version in the database. If we do, we have a old layout in our hands
-            String value = getStorageHandler().getStorageEngine().getConfigEntry("dbVersion");
-            if (value != null) {
-                //We have a old database, do the whole conversion
-                try {
-                    new OldFormatConverter().run();
-                    getMainConfig().setValue("Database.dbVersion", 1);
-                    sendConsoleMessage(Level.INFO, "Updated to Revision 1!");
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                getMainConfig().setValue("Database.dbVersion", 1);
-                sendConsoleMessage(Level.INFO, "Updated to Revision 1!");
-            }
-        } else if (getMainConfig().getInt("Database.dbVersion",0) == -1) {
-            alertOldDbVersion(-1,1);
-            try {
-                    new OldFormatConverter().step2();
-                    getMainConfig().setValue("Database.dbVersion", 1);
-                    sendConsoleMessage(Level.INFO, "Updated to Revision 1!");
-
-                }  catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+        // Revision 1 is the only layout this version creates. The upgrade paths
+        // from the pre-revision-1 layouts needed the old format converters,
+        // which have been removed.
+        if (getMainConfig().getInt("Database.dbVersion", 0) != 1) {
+            getMainConfig().setValue("Database.dbVersion", 1);
         }
     }
 

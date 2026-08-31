@@ -54,10 +54,7 @@ System:
     ##
     # mysql
     #  - These will attempt to connect to MySQL
-    ##
-    # h2
-    #  - These will attempt to create & connect to H2
-    Type: 'h2'
+    Type: 'mysql'
 
     #Modify if using MySQL
     Address: 'localhost'
@@ -66,9 +63,6 @@ System:
     Password: ''
     Db: 'Craftconomy'
     Prefix: 'cc3_'
-
-    #Used when you come from H2 and want a MySQL database
-    ConvertFromSQLite: false
 
     #the database revision
     dbVersion: 0

@@ -27,7 +27,6 @@ import com.greatmancode.craftconomy3.account.Balance;
 import com.greatmancode.craftconomy3.commands.currency.CurrencyRatesCommand;
 import com.greatmancode.craftconomy3.commands.money.LogCommand;
 import com.greatmancode.craftconomy3.commands.money.TopCommand;
-import com.greatmancode.craftconomy3.converter.Converter;
 import com.greatmancode.craftconomy3.currency.Currency;
 import com.greatmancode.craftconomy3.groups.WorldGroup;
 import com.greatmancode.craftconomy3.utils.NoExchangeRate;
@@ -420,24 +419,7 @@ public abstract class StorageEngine {
      */
     public abstract String retrieveWorldGroupWorlds(String name);
 
-    /**
-     * Save the converted accounts into the backend
-     * @param userList The user list being converted
-     */
-    public abstract void saveImporterUsers(List<Converter.User> userList);
 
-    /**
-     * Disable auto-commit in the storage engine
-     */
-    public abstract void disableAutoCommit();
 
-    /**
-     * Enable auto-commit in the storage engine (default)
-     */
-    public abstract void enableAutoCommit();
 
-    /**
-     * Commit the changes. Only works when autocommit is disabled
-     */
-    public abstract void commit();
 }

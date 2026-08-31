@@ -170,4 +170,15 @@ public class CurrencyManager {
     public Currency getDefaultBankCurrency() {
         return defaultBankCurrency;
     }
+
+    /**
+     * Drop the cached default currencies.
+     *
+     * These are static, so without this they keep a Currency from the previous
+     * load alive across a plugin reload, along with everything it references.
+     */
+    public static void clearDefaults() {
+        defaultCurrency = null;
+        defaultBankCurrency = null;
+    }
 }
