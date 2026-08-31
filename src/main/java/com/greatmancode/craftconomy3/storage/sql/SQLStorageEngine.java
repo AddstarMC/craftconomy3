@@ -848,8 +848,8 @@ public abstract class SQLStorageEngine extends StorageEngine {
             connection = db.getConnection();
             statement = connection.prepareStatement(logTable.selectEntryLimit);
             statement.setString(1, user.getAccountName());
-            statement.setInt(2, (page - 1) * 10);
-            statement.setInt(3, 10);
+            statement.setInt(2, (page - 1) * LogCommand.ENTRIES_PER_PAGE);
+            statement.setInt(3, LogCommand.ENTRIES_PER_PAGE);
             ResultSet set = statement.executeQuery();
             while (set.next()) {
                 logEntryList.add(new LogCommand.LogEntry(set.getTimestamp("timestamp"), set.getString("type"), set.getString("worldName"), set.getString("cause"), set.getString("causeReason"), Common.getInstance().getCurrencyManager().getCurrency(set.getString("currency_id")), set.getDouble("amount")));
@@ -861,6 +861,28 @@ public abstract class SQLStorageEngine extends StorageEngine {
             Tools.closeJDBCConnection(connection);
         }
         return logEntryList;
+    }
+
+    @Override
+    public int getLogCount(Account user) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        int count = 0;
+        try {
+            connection = db.getConnection();
+            statement = connection.prepareStatement(logTable.countEntry);
+            statement.setString(1, user.getAccountName());
+            ResultSet set = statement.executeQuery();
+            if (set.next()) {
+                count = set.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            Tools.closeJDBCStatement(statement);
+            Tools.closeJDBCConnection(connection);
+        }
+        return count;
     }
 
     @Override

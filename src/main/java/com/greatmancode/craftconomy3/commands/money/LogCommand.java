@@ -27,6 +27,7 @@ import com.greatmancode.tools.commands.CommandSender;
 import com.greatmancode.tools.commands.interfaces.CommandExecutor;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 class LogCommandThread implements Runnable {
 
@@ -60,20 +61,31 @@ class LogCommandThread implements Runnable {
 
     @Override
     public void run() {
-        String ret = Common.getInstance().getLanguageManager().parse("money_log_header", page, user.getAccountName()) + "\n";
-        for (LogCommand.LogEntry entry : Common.getInstance().getStorageHandler().getStorageEngine().getLog(user, page)) {
-            ret += "{{DARK_GREEN}}Time: {{WHITE}}" + entry.timestamp + " {{DARK_GREEN}}Type: {{WHITE}}" + entry.type + " {{DARK_GREEN}} Amount: {{WHITE}}" + Common.getInstance().format(entry.worldName, entry.currency, entry.amount) + " {{DARK_GREEN}}Cause: {{WHITE}}" + entry.cause;
-            if (entry.causeReason != null) {
-                ret += " {{DARK_GREEN}}Reason: {{WHITE}}" + entry.causeReason;
-            }
-            ret += "\n";
+        int total = Common.getInstance().getStorageHandler().getStorageEngine().getLogCount(user);
+        int lastPage = Math.max(1, (total + LogCommand.ENTRIES_PER_PAGE - 1) / LogCommand.ENTRIES_PER_PAGE);
+        StringBuilder ret = new StringBuilder(Common.getInstance().getLanguageManager()
+                .parse("money_log_header_paged", user.getAccountName(), page, lastPage));
+        List<LogCommand.LogEntry> entries =
+                Common.getInstance().getStorageHandler().getStorageEngine().getLog(user, page);
+        if (entries.isEmpty()) {
+            ret.append("\n").append(Common.getInstance().getLanguageManager().getString("money_log_empty"));
+        }
+        for (LogCommand.LogEntry entry : entries) {
+            ret.append("\n").append(LogEntryFormatter.format(entry));
         }
         // Messaging goes back to the main thread.
-        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new LogCommandThreadEnd(sender, ret), 0, false);
+        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new LogCommandThreadEnd(sender, ret.toString()), 0, false);
     }
 }
 
 public class LogCommand extends AbstractCommand {
+
+    /**
+     * Entries shown per page. Shared with the storage engine so the LIMIT and
+     * the page count can never disagree.
+     */
+    public static final int ENTRIES_PER_PAGE = 10;
+
     public LogCommand(String name) {
         super(name);
     }

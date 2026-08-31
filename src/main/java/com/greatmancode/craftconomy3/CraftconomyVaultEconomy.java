@@ -44,7 +44,12 @@ import java.util.List;
  */
 public class CraftconomyVaultEconomy extends VaultEconomy {
 
-    private static final String NAME = "Craftconomy3";
+    /**
+     * The name reported to Vault, and the causeReason written on every log
+     * entry we create. The log renderer compares against it to tell "a plugin
+     * moved this money but we do not know which" apart from a real name.
+     */
+    public static final String NAME = "Craftconomy3";
 
     @Override
     public boolean isEnabled() {

@@ -861,6 +861,49 @@ public class Common implements com.greatmancode.tools.interfaces.Common {
         languageManager.addLanguageEntry("money_infinite_set_true", "The account is now infinite!");
         languageManager.addLanguageEntry("money_log_header", "{{DARK_GREEN}} Money Log | Page {{WHITE}}%s {{DARK_GREEN}} | Account {{WHITE}}%s");
         languageManager.addLanguageEntry("money_log_cmd_help", "/money log <page> [Account Name] - Show the account log");
+        // The header gained a page count, so it goes under a new key: existing
+        // installs already have money_log_header in their lang file and
+        // addLanguageEntry never overwrites, which would drop the new argument.
+        languageManager.addLanguageEntry("money_log_header_paged", "{{DARK_GREEN}} Money Log {{WHITE}}%s {{DARK_GREEN}}| Page {{WHITE}}%s{{DARK_GREEN}} of {{WHITE}}%s");
+        languageManager.addLanguageEntry("money_log_empty", "{{DARK_GREEN}}No transactions to show.");
+        languageManager.addLanguageEntry("money_log_line", "{{DARK_GRAY}}%s {{GRAY}}%s %s {{CYAN}}%s");
+        languageManager.addLanguageEntry("money_log_amount_deposit", "{{BRIGHT_GREEN}}+%s");
+        languageManager.addLanguageEntry("money_log_amount_withdraw", "{{RED}}-%s");
+        languageManager.addLanguageEntry("money_log_amount_set", "{{YELLOW}}=%s");
+        // Each phrase has an "_unknown" twin used when the log row carries no
+        // usable name. Keep both in step when translating.
+        languageManager.addLanguageEntry("money_log_payment_sent", "Paid %s");
+        languageManager.addLanguageEntry("money_log_payment_sent_unknown", "Payment sent");
+        languageManager.addLanguageEntry("money_log_payment_received", "Received from %s");
+        languageManager.addLanguageEntry("money_log_payment_received_unknown", "Payment received");
+        languageManager.addLanguageEntry("money_log_plugin_withdraw", "Withdrawn by %s");
+        languageManager.addLanguageEntry("money_log_plugin_withdraw_unknown", "Withdrawn by server");
+        languageManager.addLanguageEntry("money_log_plugin_deposit", "Deposited by %s");
+        languageManager.addLanguageEntry("money_log_plugin_deposit_unknown", "Deposited by server");
+        languageManager.addLanguageEntry("money_log_admin_withdraw", "Taken by %s");
+        languageManager.addLanguageEntry("money_log_admin_withdraw_unknown", "Taken by an admin");
+        languageManager.addLanguageEntry("money_log_admin_deposit", "Added by %s");
+        languageManager.addLanguageEntry("money_log_admin_deposit_unknown", "Added by an admin");
+        languageManager.addLanguageEntry("money_log_admin_set", "Balance set by %s");
+        languageManager.addLanguageEntry("money_log_admin_set_unknown", "Balance set by an admin");
+        languageManager.addLanguageEntry("money_log_bank_deposit", "Deposited to %s");
+        languageManager.addLanguageEntry("money_log_bank_deposit_unknown", "Bank deposit");
+        languageManager.addLanguageEntry("money_log_bank_withdraw", "Withdrawn from %s");
+        languageManager.addLanguageEntry("money_log_bank_withdraw_unknown", "Bank withdrawal");
+        languageManager.addLanguageEntry("money_log_bank_creation", "Bank created");
+        languageManager.addLanguageEntry("money_log_bank_creation_unknown", "Bank created");
+        languageManager.addLanguageEntry("money_log_bank_delete", "Bank %s closed");
+        languageManager.addLanguageEntry("money_log_bank_delete_unknown", "Bank closed");
+        languageManager.addLanguageEntry("money_log_exchange", "Exchanged to %s");
+        languageManager.addLanguageEntry("money_log_exchange_unknown", "Currency exchange");
+        languageManager.addLanguageEntry("money_log_payday_wage", "Payday");
+        languageManager.addLanguageEntry("money_log_payday_wage_unknown", "Payday");
+        languageManager.addLanguageEntry("money_log_payday_tax", "Tax");
+        languageManager.addLanguageEntry("money_log_payday_tax_unknown", "Tax");
+        languageManager.addLanguageEntry("money_log_convert", "Converted from another economy");
+        languageManager.addLanguageEntry("money_log_convert_unknown", "Converted from another economy");
+        languageManager.addLanguageEntry("money_log_unknown", "Adjusted (%s)");
+        languageManager.addLanguageEntry("money_log_unknown_unknown", "Adjusted");
         languageManager.addLanguageEntry("bank_list_cmd_help", "/bank list - List all the bank accounts you have access");
         languageManager.addLanguageEntry("bank_account_list", "List of bank accounts: %s");
         languageManager.addLanguageEntry("currency_rates_cmd_help", "/currency rates - Show all the exchange rates available.");

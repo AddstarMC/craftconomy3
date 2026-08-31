@@ -67,6 +67,10 @@ public class LogTable extends DatabaseTable {
             "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ") " +
             "ORDER BY " + getPrefix() + TABLE_NAME + ".id DESC LIMIT ?,?";
 
+    public final String countEntry =
+            "SELECT COUNT(*) FROM " + getPrefix() + TABLE_NAME + " " +
+            "WHERE " + getPrefix() + TABLE_NAME + ".username_id = (" + AccountTable.sqlAccountIDbyName(getPrefix()) + ")";
+
     public final String cleanEntry = "DELETE FROM " + getPrefix() + TABLE_NAME + " WHERE timestamp <= ?";
 
     public LogTable(String prefix) {

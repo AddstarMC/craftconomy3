@@ -337,6 +337,15 @@ public abstract class StorageEngine {
     public abstract List<LogCommand.LogEntry> getLog(Account user, int page);
 
     /**
+     * Counts the log entries for an account, so the log command can tell the
+     * reader how many pages there are.
+     *
+     * @param user The account to count entries for.
+     * @return The number of entries, or 0 if the count could not be read.
+     */
+    public abstract int getLogCount(Account user);
+
+    /**
      * Retrieve a list of the top accounts
      * @param page The page number
      * @param currency The currency
