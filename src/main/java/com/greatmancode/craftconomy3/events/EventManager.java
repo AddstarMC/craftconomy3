@@ -97,9 +97,14 @@ public class EventManager implements Listener {
                 if (event.getUuid() != null
                         && Common.getInstance().getServerCaller().getPlayerCaller().isOnline(event.getUuid())) {
                     // They reconnected; their cached account is in use again.
+                    Common.getInstance().getLogger().log(Level.FINE,
+                            "Kept the cached account for " + name + "; they are back online.");
                     return;
                 }
-                Common.getInstance().getAccountManager().clearCache(name);
+                boolean removed = Common.getInstance().getAccountManager().clearCache(name);
+                Common.getInstance().getLogger().log(Level.FINE, removed
+                        ? "Released the cached account for " + name + "."
+                        : "No cached account to release for " + name + ".");
             }
         }, 30, false);
     }

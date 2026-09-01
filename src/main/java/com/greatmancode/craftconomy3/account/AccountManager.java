@@ -140,13 +140,23 @@ public class AccountManager {
      * Clear the account cache from this user. Useful due to the UUID feature in minecraft.
      * @param name The name of the player/account.
      */
-    public void clearCache(String name) {
+    public boolean clearCache(String name) {
         // Entries are keyed the same way getAccount stores them, so the name
         // has to be normalised here too or this removes nothing.
-        accountList.remove(name);
+        boolean removed = accountList.remove(name) != null;
         if (name != null) {
-            accountList.remove(name.toLowerCase());
+            removed |= accountList.remove(name.toLowerCase()) != null;
         }
+        return removed;
+    }
+
+    /**
+     * Number of player accounts currently cached. Intended for diagnostics.
+     *
+     * @return the cached account count
+     */
+    public int getCachedAccountCount() {
+        return accountList.size();
     }
 
     /**
