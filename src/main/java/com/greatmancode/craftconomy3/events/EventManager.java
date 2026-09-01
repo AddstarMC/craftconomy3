@@ -24,6 +24,7 @@ import com.greatmancode.craftconomy3.account.Account;
 import com.greatmancode.tools.events.interfaces.EventHandler;
 import com.greatmancode.tools.events.interfaces.Listener;
 import com.greatmancode.tools.events.playerEvent.PlayerJoinEvent;
+import com.greatmancode.tools.events.playerEvent.PlayerQuitEvent;
 import com.greatmancode.tools.events.playerEvent.PreJoinEvent;
 
 import java.util.logging.Level;
@@ -65,6 +66,42 @@ public class EventManager implements Listener {
             Common.getInstance().getLogger().info("Released the name '" + name + "' from "
                     + released + " stale account(s) so " + uuid + " can use it.");
         }
+    }
+
+    /**
+     * Drop a player's cached account once they have left.
+     *
+     * The cache exists to save a lookup per Vault call while somebody is
+     * playing; keeping it after they leave only grows the map and lets flags
+     * such as infiniteMoney go stale against the other servers sharing this
+     * database.
+     *
+     * The removal is delayed so anything still settling a transaction as the
+     * player disconnects keeps its cache hit, and it is skipped if they have
+     * come back in the meantime, which happens routinely when moving between
+     * servers behind the proxy.
+     */
+    @EventHandler
+    public void PlayerQuitEvent(final PlayerQuitEvent event) {
+        if (Common.getInstance().getMainConfig().getBoolean("System.Setup", true)) {
+            return;
+        }
+        final String name = event.getName() != null ? event.getName().toLowerCase() : null;
+        if (name == null) {
+            return;
+        }
+        // The scheduler multiplies its delay by 20 ticks, so this is 30 seconds.
+        Common.getInstance().getServerCaller().getSchedulerCaller().delay(new Runnable() {
+            @Override
+            public void run() {
+                if (event.getUuid() != null
+                        && Common.getInstance().getServerCaller().getPlayerCaller().isOnline(event.getUuid())) {
+                    // They reconnected; their cached account is in use again.
+                    return;
+                }
+                Common.getInstance().getAccountManager().clearCache(name);
+            }
+        }, 30, false);
     }
 
     @EventHandler
